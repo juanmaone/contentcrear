@@ -1,0 +1,20 @@
+{
+  "name": "ContentCreator - AI Video Generation",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "outputDirectory": "./dist",
+  "env": {
+    "VITE_SUPABASE_URL": {
+      "description": "Supabase project URL"
+    },
+    "VITE_SUPABASE_ANON_KEY": {
+      "description": "Supabase anonymous key"
+    }
+  },
+  "regions": ["sfo1"],
+  "git": {
+    "deploymentEnabled": {
+      "main": true
+    }
+  }
+}
