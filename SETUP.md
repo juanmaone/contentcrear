@@ -10,7 +10,7 @@ Cualquier comercio local puede crear contenido de calidad sin experiencia en edi
 
 - **Frontend:** React 19 + Vite 7 + Tailwind CSS + shadcn/ui + Sonner
 - **Auth & Backend:** Supabase (Auth + DB + Storage + Edge Functions)
-- **AI:** GPT-4o Vision + GPT-4o (via Supabase Edge Functions para seguridad)
+- **AI:** Modelos GPT disponibles vía OpenRouter (Vision + Texto) usando Supabase Edge Functions para seguridad
 - **Video Gen:** Replicate API (Luma, Kling, Runway, Pika)
 - **TTS:** ElevenLabs
 - **Deployment:** Vercel
@@ -22,7 +22,7 @@ Cualquier comercio local puede crear contenido de calidad sin experiencia en edi
 ### 1. Requisitos
 - Node.js 18+ y npm/yarn
 - Cuenta Supabase gratuita (https://supabase.com)
-- API keys de OpenAI, Replicate, ElevenLabs
+- API keys de OpenRouter, Replicate, ElevenLabs
 
 ### 2. Setup Inicial
 
@@ -42,7 +42,12 @@ cp .env.example .env.local
 ```
 VITE_SUPABASE_URL=https://[tu-proyecto].supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGc...
-VITE_OPENAI_API_KEY=sk-... (para Edge Functions)
+# Variables usadas por Edge Functions (no se exponen al navegador)
+OPENROUTER_API_KEY=or-...
+OPENROUTER_TEXT_MODEL=openai/gpt-4o-mini
+OPENROUTER_VISION_MODEL=openai/gpt-4o-mini
+OPENROUTER_SITE_URL=http://localhost:5173
+OPENROUTER_APP_NAME=ContentCreator
 VITE_REPLICATE_API_TOKEN=...
 VITE_ELEVENLABS_API_KEY=...
 ```
@@ -144,19 +149,23 @@ En Supabase Storage, crea estos buckets (todos private):
 1. En Supabase Dashboard → Edge Functions → Nueva Función
 2. Ó en local con `supabase functions serve`
 3. Las funciones ya están creadas en `supabase/functions/`:
-   - `analyze-vision` - Análisis con GPT-4o Vision
-   - `generate-ideas` - Genera 6 ideas virales
-   - `generate-copy` - Crea 5 variaciones de copy
-   - `generate-styles` - Propone 4 estilos de video
+  - `analyze-vision` - Análisis con modelo Vision vía OpenRouter
+  - `generate-ideas` - Genera 6 ideas virales (modelo texto OpenRouter)
+  - `generate-copy` - Crea 5 variaciones de copy (OpenRouter)
+  - `generate-styles` - Propone 4 estilos de video (OpenRouter)
 
 #### Paso 4: Variables de Entorno para Edge Functions
 En Supabase Dashboard → Settings → Edge Functions → Environment Variables:
 
 ```
-OPENAI_API_KEY=sk-...
+OPENROUTER_API_KEY=or-...
+OPENROUTER_TEXT_MODEL=openai/gpt-4o-mini
+OPENROUTER_VISION_MODEL=openai/gpt-4o-mini
+OPENROUTER_SITE_URL=https://tu-dominio.com
+OPENROUTER_APP_NAME=ContentCreator
 ```
 
-**Nota:** Las Edge Functions usan `OPENAI_API_KEY` en el servidor, lo que mantiene tu clave segura. El cliente NUNCA toca directamente OpenAI.
+**Nota:** Las Edge Functions usan `OPENROUTER_API_KEY` en el servidor, por lo que la clave nunca toca el navegador. Puedes apuntar a cualquier modelo soportado por OpenRouter.
 
 #### Paso 5: Deploy de Edge Functions (Producción)
 ```bash

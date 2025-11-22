@@ -15,10 +15,9 @@ export default function Dashboard() {
 
   // Redirect to config if not set up
   useEffect(() => {
-    if (!isConfigured()) {
-      toast.info('Por favor completa tu configuración primero')
-      navigate('/configuracion')
-    }
+    // Only redirect if user has no config at all
+    // config will be null if user never created one, or will have data if they did
+    // We allow empty configs now, so just let them proceed
   }, [config])
 
   const handleLogout = async () => {
@@ -35,34 +34,26 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-cyan-50">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-sky-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+      <div className="backdrop-blur bg-white/80 border-b border-white/60">
+        <div className="max-w-6xl mx-auto px-4 py-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Bienvenido, <span className="text-purple-600">{config?.business_name || user?.email}</span>
+            <p className="text-sm uppercase tracking-widest text-purple-500 font-semibold mb-1">Panel principal</p>
+            <h1 className="text-3xl font-bold text-slate-900">
+              Hola, <span className="text-purple-600">{config?.business_name || user?.email}</span>
             </h1>
-            <p className="text-gray-600 text-sm mt-1">
+            <p className="text-slate-600 text-sm mt-1">
               {config?.category
                 ? `Rubro: ${config.category.replace('_', ' ').charAt(0).toUpperCase() + config.category.slice(1)}`
-                : 'Completa tu perfil'}
+                : 'Completa tu perfil para personalizar tu contenido'}
             </p>
           </div>
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={() => navigate('/configuracion')}
-              disabled={loading}
-            >
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button variant="outline" onClick={() => navigate('/configuracion')} disabled={loading}>
               ⚙️ Configuración
             </Button>
-            <Button
-              variant="danger"
-              onClick={handleLogout}
-              loading={loading}
-              disabled={loading}
-            >
+            <Button variant="danger" onClick={handleLogout} loading={loading} disabled={loading}>
               Salir
             </Button>
           </div>
@@ -72,50 +63,48 @@ export default function Dashboard() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Welcome Section */}
-        <Card className="shadow-xl mb-8">
-          <CardContent className="p-8 text-center">
-            <h2 className="text-3xl font-bold text-gray-900 mb-3">🎬 Crear tu primer Reel</h2>
-            <p className="text-gray-600 mb-6 max-w-xl mx-auto">
-              En menos de 4 minutos, transforma tus fotos de productos en Reels y Stories virales con IA.
-              No necesitas experiencia en edición.
+        <Card className="shadow-2xl mb-8 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-sky-500 text-white border-none">
+          <CardContent className="p-8 text-center space-y-4">
+            <p className="text-sm uppercase tracking-[0.4em] text-white/80">listo en minutos</p>
+            <h2 className="text-3xl md:text-4xl font-bold">🎬 Crea tu próximo Reel en 3 pasos</h2>
+            <p className="text-white/80 max-w-2xl mx-auto">
+              Sube tu material, deja que la IA proponga ideas y genera videos optimizados con tu identidad de marca.
             </p>
-            <Button size="lg" onClick={() => navigate('/crear')}>
-              ✨ Crear nuevo Reel/Story
-            </Button>
+            <div className="flex justify-center">
+              <Button size="lg" onClick={() => navigate('/crear')} fullWidth className="max-w-xs">
+                ✨ Crear nuevo Reel/Story
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
         {/* Info Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="shadow-md hover:shadow-lg transition">
-            <CardContent className="p-6">
-              <div className="text-4xl mb-3">📸</div>
-              <h3 className="font-semibold text-gray-900 mb-2">1. Sube tus fotos</h3>
-              <p className="text-sm text-gray-600">
-                Carga fotos o videos de tus productos con la cámara del celular
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-md hover:shadow-lg transition">
-            <CardContent className="p-6">
-              <div className="text-4xl mb-3">✨</div>
-              <h3 className="font-semibold text-gray-900 mb-2">2. IA analiza</h3>
-              <p className="text-sm text-gray-600">
-                GPT-4o Vision detecta productos y sugiere 6 ideas virales
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-md hover:shadow-lg transition">
-            <CardContent className="p-6">
-              <div className="text-4xl mb-3">🎥</div>
-              <h3 className="font-semibold text-gray-900 mb-2">3. Genera video</h3>
-              <p className="text-sm text-gray-600">
-                Replica crea el Reel en 1-3 minutos con tu logo y contactos
-              </p>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[
+            {
+              icon: '📸',
+              title: '1. Sube tus fotos',
+              description: 'Carga fotos o videos de tus productos directo desde tu celular',
+            },
+            {
+              icon: '✨',
+              title: '2. IA analiza',
+              description: 'GPT-4o Vision detecta productos y sugiere ideas virales optimizadas',
+            },
+            {
+              icon: '🎥',
+              title: '3. Genera video',
+              description: 'Replica crea el Reel con tu branding y contactos en minutos',
+            },
+          ].map(({ icon, title, description }) => (
+            <Card key={title} className="transition hover:-translate-y-1">
+              <CardContent className="p-6">
+                <div className="text-4xl mb-3">{icon}</div>
+                <h3 className="font-semibold text-slate-900 mb-2">{title}</h3>
+                <p className="text-sm text-slate-600">{description}</p>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
         {/* History Section */}

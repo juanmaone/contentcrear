@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBusinessConfig } from '../hooks/useBusinessConfig'
 import { useGeneration } from '../hooks/useGeneration'
@@ -15,7 +15,7 @@ import { MAX_FILE_SIZES, SUPPORTED_FILE_TYPES } from '../utils/constants'
 
 export default function Crear() {
   const navigate = useNavigate()
-  const { config } = useBusinessConfig()
+  const { config, loading: configLoading } = useBusinessConfig()
   const {
     uploadedFiles: uploadedFilesState,
     analysisResults,
@@ -27,6 +27,8 @@ export default function Crear() {
     selectedStyle,
     voiceOptions,
     selectedVoice,
+    scriptVariants,
+    selectedScript,
     loading,
     error,
     progress,
@@ -36,6 +38,9 @@ export default function Crear() {
     selectCopyOption,
     selectStyleOption,
     selectVoiceOption,
+    generateScriptOptions,
+    updateScriptVariant,
+    selectScriptVariant,
     saveToHistory,
     reset,
   } = useGeneration()
@@ -43,14 +48,32 @@ export default function Crear() {
   const [step, setStep] = useState(1)
   const [uploadedFiles, setUploadedFiles] = useState([])
   const [dragActive, setDragActive] = useState(false)
+  const fileInputRef = useRef(null)
+
+  const steps = [
+    { id: 1, label: 'Material' },
+    { id: 2, label: 'Ideas' },
+    { id: 3, label: 'Copy' },
+    { id: 4, label: 'Estilo' },
+    { id: 5, label: 'Guion' },
+    { id: 6, label: 'Render' },
+  ]
+
+  const openFileDialog = () => {
+    fileInputRef.current?.click()
+  }
 
   // Validate config
   useEffect(() => {
-    if (!config || !config.business_name) {
+    // Wait for loading to finish before validating
+    if (configLoading) return
+    
+    // Only redirect if user has started config but didn't add business name
+    if (config && !config.business_name) {
       toast.error('Por favor completa tu configuración primero')
       navigate('/configuracion')
     }
-  }, [config])
+  }, [config, configLoading])
 
   const handleDrag = (e) => {
     e.preventDefault()
@@ -73,18 +96,27 @@ export default function Crear() {
 
   const handleFileUpload = (e) => {
     const files = Array.from(e.target.files || [])
+    console.log('Files selected:', files.length, files.map(f => ({ name: f.name, type: f.type, size: f.size })))
     handleFiles(files)
+    // Reset input so same file can be selected again
+    e.target.value = ''
   }
 
   const handleFiles = (files) => {
+    console.log('Processing files:', files)
     // Validate file types and sizes
     const validFiles = files.filter((file) => {
-      if (!SUPPORTED_FILE_TYPES.images.includes(file.type) && !SUPPORTED_FILE_TYPES.videos.includes(file.type)) {
+      const isImage = SUPPORTED_FILE_TYPES.images.includes(file.type)
+      const isVideo = SUPPORTED_FILE_TYPES.videos.includes(file.type)
+      
+      console.log(`File: ${file.name}, Type: ${file.type}, IsImage: ${isImage}, IsVideo: ${isVideo}`)
+      
+      if (!isImage && !isVideo) {
         toast.error(`Tipo de archivo no soportado: ${file.type}`)
         return false
       }
 
-      const maxSize = file.type.startsWith('video') ? MAX_FILE_SIZES.video : MAX_FILE_SIZES.image
+      const maxSize = isVideo ? MAX_FILE_SIZES.video : MAX_FILE_SIZES.image
       if (file.size > maxSize) {
         toast.error(`Archivo muy grande: ${file.name}`)
         return false
@@ -93,12 +125,18 @@ export default function Crear() {
       return true
     })
 
+    console.log('Valid files:', validFiles.length)
+
     if (validFiles.length + uploadedFiles.length > 5) {
       toast.error('Máximo 5 archivos')
       return
     }
 
-    setUploadedFiles((prev) => [...prev, ...validFiles])
+    setUploadedFiles((prev) => {
+      const updated = [...prev, ...validFiles]
+      console.log('Updated uploaded files:', updated.length)
+      return updated
+    })
   }
 
   const handleRemoveFile = (index) => {
@@ -136,13 +174,62 @@ export default function Crear() {
   }
 
   const handleSelectStyle = (style) => {
+    if (!selectedCopy || !selectedIdea) {
+      toast.error('Selecciona primero una idea y un copy')
+      return
+    }
+
     selectStyleOption(style)
+    const variants = generateScriptOptions({
+      idea: selectedIdea,
+      copy: selectedCopy,
+      style,
+      businessConfig: config,
+      analysis: analysisResults,
+    })
+
+    if (!variants.length) {
+      toast.error('No pudimos generar guiones. Intenta nuevamente.')
+      return
+    }
+
     setStep(5)
+    toast.success('Estilo seleccionado. Generamos tus guiones 🎬')
+  }
+
+  const handleScriptChange = (scriptId, value) => {
+    updateScriptVariant(scriptId, value)
+  }
+
+  const handleScriptSelect = (scriptId) => {
+    selectScriptVariant(scriptId)
+  }
+
+  const handleDownloadScript = (script) => {
+    const blob = new Blob([script.text], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${script.title.replace(/\s+/g, '_').toLowerCase()}.txt`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
+  const handleConfirmScript = () => {
+    if (!selectedScript) {
+      toast.error('Selecciona un guión para continuar')
+      return
+    }
+
+    toast.success('Guión guardado')
+    setStep(6)
   }
 
   const handleGenerateVideo = async () => {
-    if (!selectedIdea || !selectedCopy || !selectedStyle || !selectedVoice) {
-      toast.error('Por favor completa todas las selecciones')
+    if (!selectedIdea || !selectedCopy || !selectedStyle || !selectedVoice || !selectedScript) {
+      toast.error('Por favor completa todas las selecciones (incluye guión y voz)')
       return
     }
 
@@ -153,6 +240,7 @@ export default function Crear() {
         selectedCopy,
         selectedStyle,
         selectedVoice,
+        selectedScript,
         analysisResults,
         businessConfig: config,
       })
@@ -186,48 +274,75 @@ export default function Crear() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-cyan-50 p-4 pb-20">
-      <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-cyan-50 px-4 py-10">
+      <div className="max-w-5xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Crear Reel/Story</h1>
-          <Button variant="outline" size="sm" onClick={() => navigate('/dashboard')}>
-            ← Volver
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-10">
+          <div>
+            <p className="text-sm uppercase tracking-[0.4em] text-purple-500 font-semibold">Nuevo proyecto</p>
+            <h1 className="text-4xl font-bold text-gray-900">Crear Reel o Story</h1>
+            <p className="text-sm text-slate-600 mt-1">Procesamos tus fotos, proponemos ideas y renderizamos un video con tu marca.</p>
+          </div>
+          <Button variant="outline" onClick={() => navigate('/dashboard')}>
+            ← Volver al dashboard
           </Button>
         </div>
 
         {/* Step Indicator */}
-        <div className="flex gap-2 mb-8">
-          {[1, 2, 3, 4, 5].map((s) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-10">
+          {steps.map(({ id, label }) => (
             <div
-              key={s}
-              className={`flex-1 h-2 rounded-full transition ${s <= step ? 'bg-purple-600' : 'bg-gray-200'}`}
-            ></div>
+              key={id}
+              className={`rounded-2xl border px-3 py-2 text-center text-sm font-semibold transition ${
+                id <= step ? 'bg-purple-600 text-white border-purple-600 shadow-lg shadow-purple-200/70' : 'border-slate-200 bg-white/70 text-slate-500'
+              }`}
+            >
+              <span className="block text-xs opacity-70">Paso {id}</span>
+              {label}
+            </div>
           ))}
         </div>
 
         {/* Step 1: Upload Images */}
         {step === 1 && (
-          <Card className="shadow-xl">
-            <CardHeader>
-              <h2 className="text-2xl font-semibold text-gray-900">Sube tus fotos o videos</h2>
-              <p className="text-gray-600 mt-2">Arrastra o haz clic para seleccionar (máx 5 archivos)</p>
+          <Card className="shadow-2xl">
+            <CardHeader className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <h2 className="text-2xl font-semibold text-gray-900">Sube tus fotos o videos</h2>
+                  <p className="text-gray-600 mt-1">Arrastra o haz clic para seleccionar (máx 5 archivos, hasta 50MB)</p>
+                </div>
+                <span className="px-3 py-1 rounded-full text-sm bg-purple-100 text-purple-700 font-medium">
+                  Tiempo estimado · 3 min
+                </span>
+              </div>
             </CardHeader>
 
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-8">
               {/* Upload Area */}
               <div
                 onDrop={handleDrop}
                 onDragEnter={handleDrag}
                 onDragLeave={handleDrag}
                 onDragOver={handleDrag}
-                className={`border-2 border-dashed rounded-lg p-8 text-center transition cursor-pointer ${
-                  dragActive ? 'border-purple-500 bg-purple-50' : 'border-purple-300 hover:bg-purple-50'
+                onClick={openFileDialog}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    openFileDialog()
+                  }
+                }}
+                className={`border-2 border-dashed rounded-2xl p-10 text-center transition cursor-pointer bg-white/60 ${
+                  dragActive
+                    ? 'border-purple-500 bg-gradient-to-br from-purple-50/80 to-white'
+                    : 'border-slate-200 hover:border-purple-400 hover:bg-white'
                 }`}
               >
                 <div className="text-5xl mb-3">📸</div>
-                <p className="text-gray-900 font-semibold mb-1">Arrastra imágenes aquí o haz clic</p>
-                <p className="text-gray-600 text-sm mb-4">PNG, JPG, MP4, WebM</p>
+                <p className="text-gray-900 font-semibold mb-1">Arrastra imágenes o videos aquí</p>
+                <p className="text-gray-500 text-sm mb-4">PNG, JPG, MP4 o WebM · Máx 5 archivos</p>
                 <input
                   type="file"
                   multiple
@@ -235,10 +350,18 @@ export default function Crear() {
                   onChange={handleFileUpload}
                   className="hidden"
                   id="file-upload"
+                  ref={fileInputRef}
                 />
-                <label htmlFor="file-upload" className="cursor-pointer">
-                  <Button size="sm">Seleccionar archivos</Button>
-                </label>
+                <Button
+                  size="md"
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    openFileDialog()
+                  }}
+                >
+                  Seleccionar archivos
+                </Button>
               </div>
 
               {/* Uploaded Files Preview */}
@@ -247,10 +370,10 @@ export default function Crear() {
                   <h3 className="font-semibold text-gray-900 mb-3">
                     {uploadedFiles.length} archivo(s) seleccionado(s)
                   </h3>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
                     {uploadedFiles.map((file, idx) => (
                       <div key={idx} className="relative group">
-                        <div className="bg-gray-100 rounded-lg overflow-hidden h-24 flex items-center justify-center">
+                        <div className="bg-slate-100 rounded-2xl overflow-hidden h-28 flex items-center justify-center">
                           {file.type.startsWith('image') ? (
                             <img
                               src={URL.createObjectURL(file)}
@@ -262,8 +385,9 @@ export default function Crear() {
                           )}
                         </div>
                         <button
+                          type="button"
                           onClick={() => handleRemoveFile(idx)}
-                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                          className="absolute top-2 right-2 bg-white text-rose-500 rounded-full w-7 h-7 flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition"
                         >
                           ×
                         </button>
@@ -274,8 +398,8 @@ export default function Crear() {
               )}
 
               {/* Action Buttons */}
-              <div className="flex gap-3 pt-4">
-                <Button variant="outline" size="lg" onClick={() => navigate('/dashboard')}>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end pt-2">
+                <Button variant="outline" onClick={() => navigate('/dashboard')}>
                   Cancelar
                 </Button>
                 <Button
@@ -283,6 +407,7 @@ export default function Crear() {
                   loading={loading}
                   disabled={loading || uploadedFiles.length === 0}
                   onClick={handleAnalyze}
+                  className="sm:min-w-[220px]"
                 >
                   Analizar imágenes
                 </Button>
@@ -397,8 +522,76 @@ export default function Crear() {
           </Card>
         )}
 
-        {/* Step 5: Voice & Review */}
+        {/* Step 5: Script Editor */}
         {step === 5 && (
+          <Card className="shadow-xl">
+            <CardHeader>
+              <h2 className="text-2xl font-semibold text-gray-900">📝 Guiones para tu voz en off</h2>
+              <p className="text-gray-600 mt-2">
+                Generamos 3 variantes (máx. 2000 caracteres) usando tu idea, copy y estilo. Ajusta el texto, descárgalo y elige el que usarás en ElevenLabs.
+              </p>
+            </CardHeader>
+
+            <CardContent className="space-y-6">
+              {scriptVariants.length === 0 ? (
+                <div className="text-center text-gray-600">Generando guiones...</div>
+              ) : (
+                <div className="space-y-5">
+                  {scriptVariants.map((script) => (
+                    <div
+                      key={script.id}
+                      className={`border rounded-lg p-4 space-y-3 ${selectedScript?.id === script.id ? 'border-purple-500 shadow-lg shadow-purple-100' : 'border-gray-200'}`}
+                    >
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{script.title}</h3>
+                          <p className="text-sm text-gray-600">
+                            {selectedStyle?.name ? `Pensado para un estilo ${selectedStyle.name.toLowerCase()}` : 'Variante sugerida'}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={selectedScript?.id === script.id ? 'default' : 'outline'}
+                            onClick={() => handleScriptSelect(script.id)}
+                          >
+                            {selectedScript?.id === script.id ? 'Seleccionado' : 'Seleccionar'}
+                          </Button>
+                          <Button type="button" size="sm" variant="ghost" onClick={() => handleDownloadScript(script)}>
+                            Descargar .txt
+                          </Button>
+                        </div>
+                      </div>
+
+                      <textarea
+                        value={script.text}
+                        maxLength={2000}
+                        onChange={(e) => handleScriptChange(script.id, e.target.value)}
+                        className="w-full min-h-[180px] rounded-md border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm p-3"
+                      />
+                      <div className="text-xs text-gray-500 text-right">
+                        {script.text.length}/2000 caracteres
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-4">
+                <Button variant="outline" size="lg" onClick={() => setStep(4)}>
+                  Volver
+                </Button>
+                <Button size="lg" onClick={handleConfirmScript} disabled={!selectedScript}>
+                  Guardar guión y continuar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 6: Voice & Review */}
+        {step === 6 && (
           <Card className="shadow-xl">
             <CardHeader>
               <h2 className="text-2xl font-semibold text-gray-900">🎤 Elige voz y revisa</h2>
@@ -436,6 +629,15 @@ export default function Crear() {
                       <span className="font-semibold text-gray-900">{selectedStyle.name}</span>
                     </div>
 
+                    {selectedScript && (
+                      <div className="flex items-start gap-2">
+                        <span className="text-gray-600">📝 Guión:</span>
+                        <span className="font-semibold text-gray-900 line-clamp-2">
+                          {selectedScript.text}
+                        </span>
+                      </div>
+                    )}
+
                     <div className="flex items-center gap-2">
                       <span className="text-gray-600">🎤 Voz:</span>
                       <span className="font-semibold text-gray-900">
@@ -455,7 +657,7 @@ export default function Crear() {
                 <Button
                   variant="outline"
                   size="lg"
-                  onClick={() => setStep(4)}
+                  onClick={() => setStep(5)}
                   disabled={loading}
                 >
                   Volver

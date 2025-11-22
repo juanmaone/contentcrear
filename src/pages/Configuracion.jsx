@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useBusinessConfig } from '../hooks/useBusinessConfig'
-import { Card, CardContent, CardHeader, CardFooter } from '../components/common/Card'
+import { Card, CardContent } from '../components/common/Card'
 import Button from '../components/common/Button'
 import Input from '../components/common/Input'
 import { BUSINESS_CATEGORIES, DEFAULT_COLORS, FREE_MUSIC_LIBRARY } from '../utils/constants'
@@ -92,8 +92,8 @@ export default function Configuracion() {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    if (!formData.business_name || !formData.category) {
-      toast.error('El nombre del negocio y rubro son requeridos')
+    if (!formData.business_name) {
+      toast.error('El nombre del negocio es requerido')
       return
     }
 
@@ -121,36 +121,41 @@ export default function Configuracion() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-cyan-50 p-4 pb-20">
-      <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-cyan-50 py-10 px-4">
+      <div className="max-w-5xl mx-auto space-y-8">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Configura tu negocio</h1>
-          <p className="text-gray-600">
-            Estos datos se usarán en todos tus reels para contactos y branding
+        <div className="text-center md:text-left space-y-2">
+          <p className="text-sm uppercase tracking-[0.4em] text-purple-500 font-semibold">Brand kit</p>
+          <h1 className="text-4xl font-bold text-slate-900">Configura tu negocio</h1>
+          <p className="text-slate-600 max-w-2xl">
+            Personaliza colores, contactos y estilo para que cada Reel incluya tu identidad y datos actualizados.
           </p>
         </div>
 
         {/* Form */}
-        <Card className="shadow-xl">
-          <form onSubmit={handleSubmit} className="space-y-6 p-6">
-            {/* Section 1: Business Info */}
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Información del negocio</h2>
-              <div className="space-y-4">
-                <Input
-                  label="Nombre del negocio"
-                  placeholder="Mi increíble negocio"
-                  value={formData.business_name}
-                  onChange={(e) => handleInputChange('business_name', e.target.value)}
-                />
-
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <Card>
+            <CardContent className="space-y-6">
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-semibold text-purple-500 tracking-[0.3em]">01</span>
+                <h2 className="text-xl font-semibold text-slate-900">Información del negocio</h2>
+                <p className="text-sm text-slate-500">Lo usaremos en los créditos y presentaciones automáticas.</p>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="md:col-span-2">
+                  <Input
+                    label="Nombre del negocio"
+                    placeholder="Mi increíble negocio"
+                    value={formData.business_name}
+                    onChange={(e) => handleInputChange('business_name', e.target.value)}
+                  />
+                </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700 block mb-2">Rubro</label>
                   <select
                     value={formData.category}
                     onChange={(e) => handleInputChange('category', e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white/80 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                   >
                     <option value="">Selecciona un rubro</option>
                     {BUSINESS_CATEGORIES.map((cat) => (
@@ -160,124 +165,6 @@ export default function Configuracion() {
                     ))}
                   </select>
                 </div>
-
-                {/* Logo Upload */}
-                <div>
-                  <label className="text-sm font-medium text-gray-700 block mb-2">Logo</label>
-                  <div className="flex gap-4 items-start">
-                    <div className="flex-1">
-                      <input
-                        type="file"
-                        accept="image/png,image/jpeg"
-                        onChange={handleLogoUpload}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">PNG o JPG, máx 5MB</p>
-                    </div>
-                    {logoPreview && (
-                      <div className="w-20 h-20 rounded-lg overflow-hidden border border-gray-300 flex-shrink-0">
-                        <img src={logoPreview} alt="Logo preview" className="w-full h-full object-cover" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <hr className="border-gray-200" />
-
-            {/* Section 2: Address & Contact */}
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Ubicación y contacto</h2>
-              <div className="space-y-4">
-                <Input
-                  label="Dirección completa"
-                  placeholder="Calle X 123, Barrio Y, Ciudad, País"
-                  value={formData.address}
-                  onChange={(e) => handleInputChange('address', e.target.value)}
-                />
-
-                <Input
-                  label="Teléfono"
-                  type="tel"
-                  placeholder="+54 11 2345 6789"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                />
-
-                <Input
-                  label="WhatsApp"
-                  type="tel"
-                  placeholder="+54 9 11 2345 6789"
-                  value={formData.whatsapp}
-                  onChange={(e) => handleInputChange('whatsapp', e.target.value)}
-                />
-
-                <Input
-                  label="Email"
-                  type="email"
-                  placeholder="contacto@negocio.com"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                />
-
-                <Input
-                  label="Instagram (@usuario)"
-                  placeholder="@miusuario"
-                  value={formData.instagram}
-                  onChange={(e) => handleInputChange('instagram', e.target.value)}
-                />
-
-                <Input
-                  label="Facebook (URL)"
-                  placeholder="https://facebook.com/mi-pagina"
-                  value={formData.facebook}
-                  onChange={(e) => handleInputChange('facebook', e.target.value)}
-                />
-
-                <Input
-                  label="Sitio web"
-                  placeholder="https://miwebsite.com"
-                  value={formData.website}
-                  onChange={(e) => handleInputChange('website', e.target.value)}
-                />
-              </div>
-            </div>
-
-            <hr className="border-gray-200" />
-
-            {/* Section 3: Branding */}
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Branding</h2>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 block mb-2">Color primario</label>
-                    <div className="flex gap-2 items-center">
-                      <input
-                        type="color"
-                        value={formData.primary_color}
-                        onChange={(e) => handleInputChange('primary_color', e.target.value)}
-                        className="h-12 w-20 rounded border border-gray-300 cursor-pointer"
-                      />
-                      <span className="text-sm text-gray-600">{formData.primary_color}</span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 block mb-2">Color secundario</label>
-                    <div className="flex gap-2 items-center">
-                      <input
-                        type="color"
-                        value={formData.secondary_color}
-                        onChange={(e) => handleInputChange('secondary_color', e.target.value)}
-                        className="h-12 w-20 rounded border border-gray-300 cursor-pointer"
-                      />
-                      <span className="text-sm text-gray-600">{formData.secondary_color}</span>
-                    </div>
-                  </div>
-                </div>
-
                 <div>
                   <label className="text-sm font-medium text-gray-700 block mb-2">Hashtag principal</label>
                   <Input
@@ -286,36 +173,171 @@ export default function Configuracion() {
                     onChange={(e) => handleInputChange('hashtag', e.target.value)}
                   />
                 </div>
+              </div>
 
+              {/* Logo Upload */}
+              <div className="grid gap-4 md:grid-cols-[1.2fr_0.8fr] items-start">
                 <div>
-                  <label className="text-sm font-medium text-gray-700 block mb-2">Música de fondo</label>
-                  <input
-                    type="file"
-                    accept="audio/mpeg,audio/wav,audio/ogg"
-                    onChange={handleMusicUpload}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">MP3, WAV u OGG, máx 20MB</p>
+                  <label className="text-sm font-medium text-gray-700 block mb-2">Logo</label>
+                  <div className="flex gap-4 items-center">
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg"
+                      onChange={handleLogoUpload}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white/80 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">PNG o JPG, máx 5MB</p>
+                </div>
+                <div className="p-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-center">
+                  {logoPreview ? (
+                    <img src={logoPreview} alt="Logo preview" className="mx-auto h-24 object-contain" />
+                  ) : (
+                    <p className="text-sm text-slate-500">Se mostrará tu logo aquí</p>
+                  )}
                 </div>
               </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            {/* Submit */}
-            <div className="flex gap-3 pt-4">
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => navigate('/dashboard')}
-                disabled={loading}
-              >
-                Saltar
-              </Button>
-              <Button size="lg" loading={loading} disabled={loading} className="flex-1">
-                Guardar configuración
-              </Button>
-            </div>
-          </form>
-        </Card>
+          <Card>
+            <CardContent className="space-y-6">
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-semibold text-purple-500 tracking-[0.3em]">02</span>
+                <h2 className="text-xl font-semibold text-slate-900">Ubicación y contacto</h2>
+                <p className="text-sm text-slate-500">Se añadirá al final de cada video y en plantillas descargables.</p>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="md:col-span-2">
+                  <Input
+                    label="Dirección completa"
+                    placeholder="Calle X 123, Barrio Y, Ciudad, País"
+                    value={formData.address}
+                    onChange={(e) => handleInputChange('address', e.target.value)}
+                  />
+                </div>
+                <Input
+                  label="Teléfono"
+                  type="tel"
+                  placeholder="+54 11 2345 6789"
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                />
+                <Input
+                  label="WhatsApp"
+                  type="tel"
+                  placeholder="+54 9 11 2345 6789"
+                  value={formData.whatsapp}
+                  onChange={(e) => handleInputChange('whatsapp', e.target.value)}
+                />
+                <Input
+                  label="Email"
+                  type="email"
+                  placeholder="contacto@negocio.com"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                />
+                <Input
+                  label="Instagram (@usuario)"
+                  placeholder="@miusuario"
+                  value={formData.instagram}
+                  onChange={(e) => handleInputChange('instagram', e.target.value)}
+                />
+                <Input
+                  label="Facebook (URL)"
+                  placeholder="https://facebook.com/mi-pagina"
+                  value={formData.facebook}
+                  onChange={(e) => handleInputChange('facebook', e.target.value)}
+                />
+                <div className="md:col-span-2">
+                  <Input
+                    label="Sitio web"
+                    placeholder="https://miwebsite.com"
+                    value={formData.website}
+                    onChange={(e) => handleInputChange('website', e.target.value)}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Card>
+              <CardContent className="space-y-6">
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-semibold text-purple-500 tracking-[0.3em]">03</span>
+                  <h2 className="text-xl font-semibold text-slate-900">Colores de marca</h2>
+                  <p className="text-sm text-slate-500">Define el degradado principal de tus animaciones.</p>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {[{ label: 'Color primario', field: 'primary_color' }, { label: 'Color secundario', field: 'secondary_color' }].map(
+                    ({ label, field }) => (
+                      <div key={field} className="space-y-2">
+                        <p className="text-sm font-medium text-slate-700">{label}</p>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="color"
+                            value={formData[field]}
+                            onChange={(e) => handleInputChange(field, e.target.value)}
+                            className="h-14 w-20 rounded-xl border border-slate-200 cursor-pointer"
+                          />
+                          <span className="text-sm text-slate-600 font-mono">{formData[field]}</span>
+                        </div>
+                      </div>
+                    ),
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="space-y-6">
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-semibold text-purple-500 tracking-[0.3em]">04</span>
+                  <h2 className="text-xl font-semibold text-slate-900">Audio y ritmo</h2>
+                  <p className="text-sm text-slate-500">Agrega una pista para usarla como referencia al generar tus Reels.</p>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 block mb-2">Música de fondo</label>
+                    <input
+                      type="file"
+                      accept="audio/mpeg,audio/wav,audio/ogg"
+                      onChange={handleMusicUpload}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white/80 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">MP3, WAV u OGG, máx 20MB</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 block mb-2">Biblioteca sugerida</label>
+                    <div className="flex flex-wrap gap-2">
+                      {FREE_MUSIC_LIBRARY.map((track) => (
+                        <button
+                          type="button"
+                          key={track.id}
+                          onClick={() => handleInputChange('music_url', track.url)}
+                          className="px-3 py-1.5 rounded-full text-sm border border-slate-200 bg-white/70 hover:border-purple-400"
+                        >
+                          {track.name} · {track.genre}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Submit */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+            <Button variant="outline" onClick={() => navigate('/dashboard')} disabled={loading}>
+              Saltar por ahora
+            </Button>
+            <Button size="lg" loading={loading} disabled={loading} className="sm:min-w-[220px]">
+              Guardar configuración
+            </Button>
+          </div>
+        </form>
       </div>
     </div>
   )

@@ -17,7 +17,9 @@ Verifica que tengas:
    ```
    VITE_SUPABASE_URL=https://[proyecto].supabase.co
    VITE_SUPABASE_ANON_KEY=eyJhbGc...
-   VITE_OPENAI_API_KEY=sk-... (para Edge Functions)
+  OPENROUTER_API_KEY=or-...
+  OPENROUTER_TEXT_MODEL=openai/gpt-4o-mini
+  OPENROUTER_VISION_MODEL=openai/gpt-4o-mini
    ```
 3. **Supabase project activo** en https://supabase.com
 4. **Edge Functions archivos creados** en `supabase/functions/`
@@ -100,7 +102,7 @@ curl -X POST http://localhost:54321/functions/v1/analyze-vision \
 ]
 ```
 
-Si ves errores sobre "Cannot find module", revisa que el `OPENAI_API_KEY` esté configurado en Supabase Dashboard → Settings → Edge Functions.
+Si ves errores sobre "Cannot find module", revisa que el `OPENROUTER_API_KEY` esté configurado en Supabase Dashboard → Settings → Edge Functions.
 
 ---
 
@@ -169,7 +171,7 @@ Error: fetch failed
 3. Si usas local: `supabase functions serve` está corriendo?
 4. Si usas cloud: Edge Functions están deployadas?
 
-### Error: "OPENAI_API_KEY not found"
+### Error: "OPENROUTER_API_KEY not found"
 
 ```json
 {"error": "API configuration error"}
@@ -177,7 +179,7 @@ Error: fetch failed
 
 **Solución:**
 1. Supabase Cloud: Ve a Settings → Edge Functions → Environment Variables
-2. Agrega `OPENAI_API_KEY=sk-...`
+2. Agrega `OPENROUTER_API_KEY=or-...`
 3. Espera 30 segundos
 4. Reinicia Edge Functions
 5. Re-test
@@ -189,17 +191,17 @@ Error: fetch failed
 ```
 
 **Solución:**
-1. Verifica que tu OpenAI key tenga quota
-2. Verifica que el modelo `gpt-4o` está disponible
+1. Verifica que tu OpenRouter key tenga quota
+2. Verifica que el modelo definido en `OPENROUTER_VISION_MODEL` está disponible
 3. Revisa logs de Supabase: Dashboard → Edge Functions → Logs
 4. Intenta con una imagen más pequeña
 
 ### Error: "Invalid JSON in response"
 
-Esto significa que OpenAI no devolvió JSON válido. Probablemente por:
+Esto significa que OpenRouter (o el modelo seleccionado) no devolvió JSON válido. Probablemente por:
 1. Imágenes en formato incorrecto (usa base64 o URL HTTPS)
 2. Prompts muy largo
-3. Rate limit de OpenAI
+3. Rate limit del modelo en OpenRouter
 
 ---
 

@@ -7,7 +7,26 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables')
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  global: {
+    fetch: async (url, options = {}) => {
+      try {
+        console.log('[Supabase Request]', url.toString(), {
+          method: options.method,
+          headers: options.headers,
+        })
+      } catch (err) {
+        console.warn('Failed to log Supabase request', err)
+      }
+
+      const response = await fetch(url, options)
+
+      console.log('[Supabase Response]', url.toString(), response.status)
+
+      return response
+    },
+  },
+})
 
 // Auth helpers
 export const signUp = async (email, password) => {

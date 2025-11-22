@@ -9,7 +9,7 @@ Cualquier comercio local puede crear contenido de calidad profesional sin experi
 ## ✨ Características
 
 - ✅ **Upload Inteligente:** Sube fotos/videos de tus productos
-- 📊 **Análisis con IA:** GPT-4o Vision detecta productos, colores, emociones
+- 📊 **Análisis con IA:** Modelos vision vía OpenRouter detectan productos, colores, emociones
 - 💡 **6 Ideas Virales:** Generadas automáticamente según tu industria
 - ✍️ **5 Variantes de Copy:** Mensajes optimizados para conversión
 - 🎨 **4 Estilos de Video:** Desde energético hasta cinematic
@@ -39,7 +39,11 @@ Edit `.env.local`:
 ```
 VITE_SUPABASE_URL=https://[tu-proyecto].supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGc...
-VITE_OPENAI_API_KEY=sk-... (solo para Edge Functions)
+OPENROUTER_API_KEY=or-...
+OPENROUTER_TEXT_MODEL=openai/gpt-4o-mini
+OPENROUTER_VISION_MODEL=openai/gpt-4o-mini
+OPENROUTER_SITE_URL=http://localhost:5173
+OPENROUTER_APP_NAME=ContentCreator
 VITE_REPLICATE_API_TOKEN=r8_...
 VITE_ELEVENLABS_API_KEY=...
 ```
@@ -60,9 +64,9 @@ npm run build
 
 ## 🔐 Seguridad - Edge Functions
 
-**Importante:** Las claves de OpenAI NUNCA se exponen al navegador.
+**Importante:** Las claves de OpenRouter NUNCA se exponen al navegador.
 
-Todos los llamados a OpenAI se hacen server-side vía Supabase Edge Functions:
+Todos los llamados a los modelos (vía OpenRouter) se hacen server-side mediante Supabase Edge Functions:
 - `analyze-vision` → Detecta productos en imágenes
 - `generate-ideas` → Crea 6 ideas virales
 - `generate-copy` → Genera 5 variantes de mensaje
@@ -126,7 +130,7 @@ Todos los llamados a OpenAI se hacen server-side vía Supabase Edge Functions:
 | **Auth** | Supabase Auth (email/OAuth) |
 | **Database** | Supabase PostgreSQL |
 | **Storage** | Supabase Storage (logos, music, videos) |
-| **AI Analysis** | OpenAI GPT-4o Vision + GPT-4o |
+| **AI Analysis** | Modelos GPT vía OpenRouter |
 | **Serverless** | Supabase Edge Functions (Deno) |
 | **Video Gen** | Replicate API (4 modelos) |
 | **TTS** | ElevenLabs (4 voces) |
@@ -139,7 +143,7 @@ Todos los llamados a OpenAI se hacen server-side vía Supabase Edge Functions:
 - [`SETUP.md`](./SETUP.md) - Configuración detallada de Supabase, OAuth, Edge Functions
 - [`supabase/functions/README.md`](./supabase/functions/README.md) - Docs de Edge Functions
 - [`src/hooks/`](./src/hooks/) - Hooks de React (auth, business config, generation)
-- [`src/lib/`](./src/lib/) - Librerías (supabase client, openai wrapper)
+- [`src/lib/`](./src/lib/) - Librerías (supabase client, AI wrapper vía OpenRouter)
 
 ---
 
@@ -208,7 +212,7 @@ supabase functions deploy --project-ref YOUR_REF
 **"Error analyzing images"**
 - ✅ Verifica que tus imágenes sean < 5MB
 - ✅ Formatos soportados: JPG, PNG, WebP
-- ✅ Comprueba que `OPENAI_API_KEY` esté en Edge Functions
+- ✅ Comprueba que `OPENROUTER_API_KEY` esté en Edge Functions
 
 **"Cannot connect to database"**
 - ✅ Verifica `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`

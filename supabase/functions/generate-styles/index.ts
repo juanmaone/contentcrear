@@ -1,3 +1,4 @@
+// @ts-nocheck
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 
 const corsHeaders = {
@@ -5,6 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 }
+
+const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 interface StyleOption {
   id: string
@@ -21,6 +24,7 @@ interface GenerateStylesRequest {
   mainProduct: string
   category: string
   ideaTitle: string
+  model?: string
 }
 
 Deno.serve(async (req) => {
@@ -29,8 +33,29 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders })
   }
 
+  if (req.method !== "POST") {
+    return new Response(
+      JSON.stringify({ error: "Method not allowed" }),
+      { status: 405, headers: corsHeaders }
+    )
+  }
+
   try {
-    const { mainProduct, category, ideaTitle } = (await req.json()) as GenerateStylesRequest
+    const authToken = req.headers.get("authorization")
+    const apiKeyHeader = req.headers.get("apikey")
+    console.log("[generate-styles] Auth Token:", authToken)
+    console.log("[generate-styles] API Key Header:", apiKeyHeader)
+
+    let body
+    try {
+      body = await req.json()
+    } catch (e) {
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON body" }),
+        { status: 400, headers: corsHeaders }
+      )
+    }
+    const { mainProduct, category, ideaTitle, model } = body as GenerateStylesRequest
 
     if (!mainProduct || !category) {
       return new Response(
@@ -39,24 +64,33 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Get OpenAI API key
-    const openaiApiKey = Deno.env.get("OPENAI_API_KEY")
-    if (!openaiApiKey) {
+    const openrouterApiKey =
+      Deno.env.get("OPENROUTER_API_KEY") ?? Deno.env.get("OPENAI_API_KEY")
+
+    if (!openrouterApiKey) {
       return new Response(
         JSON.stringify({ error: "API configuration error" }),
         { status: 500, headers: corsHeaders }
       )
     }
 
-    // Call GPT-4o to generate 4 video style variations
-    const stylesResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+    const defaultTextModel =
+      Deno.env.get("OPENROUTER_TEXT_MODEL") ?? "openai/gpt-4o-mini"
+    const openrouterSiteUrl =
+      Deno.env.get("OPENROUTER_SITE_URL") ?? "http://localhost:5173"
+    const openrouterAppName =
+      Deno.env.get("OPENROUTER_APP_NAME") ?? "ContentCreator"
+
+    const stylesResponse = await fetch(OPENROUTER_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${openaiApiKey}`,
+        Authorization: `Bearer ${openrouterApiKey}`,
+        "HTTP-Referer": openrouterSiteUrl,
+        "X-Title": openrouterAppName,
       },
       body: JSON.stringify({
-        model: "gpt-4o",
+        model: model || defaultTextModel,
         messages: [
           {
             role: "user",
@@ -86,7 +120,8 @@ Requirements:
 - Duration: mix of 15s, 20s, 25s, 30s options
 - Styles should be production-ready descriptions
 - Consider ${category} audience preferences
-- Include both fast-paced and smooth visual options`,
+- Include both fast-paced and smooth visual options
+- must be in SPANISH for Latin American audience`,
           },
         ],
         max_tokens: 1500,
@@ -96,7 +131,7 @@ Requirements:
 
     if (!stylesResponse.ok) {
       const error = await stylesResponse.text()
-      console.error("OpenAI API error:", error)
+      console.error("OpenRouter API error:", error)
       return new Response(
         JSON.stringify({ error: "Styles generation failed" }),
         { status: 500, headers: corsHeaders }

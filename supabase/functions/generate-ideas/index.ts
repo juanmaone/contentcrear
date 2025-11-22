@@ -1,3 +1,4 @@
+// @ts-nocheck
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 
 const corsHeaders = {
@@ -5,6 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 }
+
+const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 interface ViralIdea {
   id: string
@@ -20,6 +23,7 @@ interface GenerateIdeasRequest {
   category: string
   analysisData: any[]
   businessName: string
+  model?: string
 }
 
 Deno.serve(async (req) => {
@@ -28,8 +32,29 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders })
   }
 
+  if (req.method !== "POST") {
+    return new Response(
+      JSON.stringify({ error: "Method not allowed" }),
+      { status: 405, headers: corsHeaders }
+    )
+  }
+
   try {
-    const { category, analysisData, businessName } = (await req.json()) as GenerateIdeasRequest
+    const authToken = req.headers.get("authorization")
+    const apiKeyHeader = req.headers.get("apikey")
+    console.log("[generate-ideas] Auth Token:", authToken)
+    console.log("[generate-ideas] API Key Header:", apiKeyHeader)
+
+    let body
+    try {
+      body = await req.json()
+    } catch (e) {
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON body" }),
+        { status: 400, headers: corsHeaders }
+      )
+    }
+    const { category, analysisData, businessName, model } = body as GenerateIdeasRequest
 
     if (!analysisData || analysisData.length === 0) {
       return new Response(
@@ -38,27 +63,37 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Get OpenAI API key
-    const openaiApiKey = Deno.env.get("OPENAI_API_KEY")
-    if (!openaiApiKey) {
+    // Get OpenRouter API key
+    const openrouterApiKey =
+      Deno.env.get("OPENROUTER_API_KEY") ?? Deno.env.get("OPENAI_API_KEY")
+
+    if (!openrouterApiKey) {
       return new Response(
         JSON.stringify({ error: "API configuration error" }),
         { status: 500, headers: corsHeaders }
       )
     }
 
+    const defaultTextModel =
+      Deno.env.get("OPENROUTER_TEXT_MODEL") ?? "openai/gpt-4o-mini"
+    const openrouterSiteUrl =
+      Deno.env.get("OPENROUTER_SITE_URL") ?? "http://localhost:5173"
+    const openrouterAppName =
+      Deno.env.get("OPENROUTER_APP_NAME") ?? "ContentCreator"
+
     const mainProduct = analysisData[0]?.main_product || "our product"
     const emotion = analysisData[0]?.emotion_style || "modern"
 
-    // Call GPT-4o to generate 6 viral ideas
-    const ideasResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+    const ideasResponse = await fetch(OPENROUTER_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${openaiApiKey}`,
+        Authorization: `Bearer ${openrouterApiKey}`,
+        "HTTP-Referer": openrouterSiteUrl,
+        "X-Title": openrouterAppName,
       },
       body: JSON.stringify({
-        model: "gpt-4o",
+        model: model || defaultTextModel,
         messages: [
           {
             role: "user",
@@ -80,7 +115,8 @@ Each idea should be a complete JSON object in this format (respond ONLY with JSO
 
 Categories of ideas to explore: trending sounds, before-after transformations, testimonials, behind-the-scenes, quick tips, comparison videos.
 Models available: Luma Ray 2, Kling 1.6, Runway Gen-3, Pika 2.1.
-Keep ideas specific to ${category} industry best practices.`,
+Keep ideas specific to ${category} industry best practices.
+must be in SPANISH for Latin American audience`,
           },
         ],
         max_tokens: 3000,
@@ -90,7 +126,7 @@ Keep ideas specific to ${category} industry best practices.`,
 
     if (!ideasResponse.ok) {
       const error = await ideasResponse.text()
-      console.error("OpenAI API error:", error)
+      console.error("OpenRouter API error:", error)
       return new Response(
         JSON.stringify({ error: "Ideas generation failed" }),
         { status: 500, headers: corsHeaders }

@@ -156,6 +156,7 @@ export function buildVideoPrompt(generation) {
     selectedStyle,
     analysisResults,
     selectedVoice,
+    selectedScript,
     businessConfig,
   } = generation
 
@@ -203,6 +204,14 @@ ${selectedVoice && selectedVoice.id !== 'none' ? `- Voice-over: ${selectedVoice.
 Generate a compelling, professional video that drives engagement and conversions.
   `
 
+  if (selectedScript?.text) {
+    prompt += `
+
+## Voice-over Script
+${selectedScript.text}
+`
+  }
+
   return prompt.trim()
 }
 
@@ -222,6 +231,8 @@ export function createGenerationRequest(generation) {
       copyId: generation.selectedCopy.id,
       styleId: generation.selectedStyle.id,
       voiceId: generation.selectedVoice?.id || 'none',
+      scriptId: generation.selectedScript?.id || 'script_custom',
+      scriptText: generation.selectedScript?.text,
       analysisScore: generation.analysisResults?.[0]?.viral_potential_score || 0,
     },
   }

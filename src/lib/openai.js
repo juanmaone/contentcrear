@@ -1,5 +1,5 @@
 /**
- * OpenAI API calls are now handled via Supabase Edge Functions
+ * AI calls (via OpenRouter) are handled by Supabase Edge Functions
  * This keeps API keys secure and prevents client-side exposure
  */
 
@@ -14,18 +14,25 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
  * Analyze images with GPT-4o Vision via Supabase Edge Function
  * Keeps API keys secure on the server
  */
-export const analyzeImagesWithVision = async (imageUrls, category = 'restaurant', businessName = 'Business') => {
+export const analyzeImagesWithVision = async (
+  imageUrls,
+  category = 'restaurant',
+  businessName = 'Business',
+  options = {}
+) => {
   try {
     const response = await fetch(`${SUPABASE_URL}/functions/v1/analyze-vision`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify({
         imageUrls,
         category,
         businessName,
+        ...(options.model ? { model: options.model } : {}),
       }),
     })
 
@@ -45,18 +52,25 @@ export const analyzeImagesWithVision = async (imageUrls, category = 'restaurant'
 /**
  * Generate viral idea cards dynamically via Edge Function
  */
-export const generateViralIdeas = async (businessCategory, analysisData, businessName) => {
+export const generateViralIdeas = async (
+  businessCategory,
+  analysisData,
+  businessName,
+  options = {}
+) => {
   try {
     const response = await fetch(`${SUPABASE_URL}/functions/v1/generate-ideas`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify({
         category: businessCategory,
         analysisData,
         businessName,
+        ...(options.model ? { model: options.model } : {}),
       }),
     })
 
@@ -76,13 +90,21 @@ export const generateViralIdeas = async (businessCategory, analysisData, busines
 /**
  * Generate copy options via Edge Function
  */
-export const generateCopyOptions = async (mainProduct, businessName, businessCategory, whatsapp, businessConfig) => {
+export const generateCopyOptions = async (
+  mainProduct,
+  businessName,
+  businessCategory,
+  whatsapp,
+  businessConfig,
+  options = {}
+) => {
   try {
     const response = await fetch(`${SUPABASE_URL}/functions/v1/generate-copy`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify({
         mainProduct,
@@ -90,6 +112,7 @@ export const generateCopyOptions = async (mainProduct, businessName, businessCat
         category: businessCategory,
         whatsappOrPhone: whatsapp,
         businessConfig,
+        ...(options.model ? { model: options.model } : {}),
       }),
     })
 
@@ -109,18 +132,25 @@ export const generateCopyOptions = async (mainProduct, businessName, businessCat
 /**
  * Generate video style suggestions via Edge Function
  */
-export const generateVideoStyles = async (mainProduct, businessCategory, ideaTitle) => {
+export const generateVideoStyles = async (
+  mainProduct,
+  businessCategory,
+  ideaTitle,
+  options = {}
+) => {
   try {
     const response = await fetch(`${SUPABASE_URL}/functions/v1/generate-styles`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify({
         mainProduct,
         category: businessCategory,
         ideaTitle,
+        ...(options.model ? { model: options.model } : {}),
       }),
     })
 

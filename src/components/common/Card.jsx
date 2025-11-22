@@ -1,13 +1,19 @@
 import { cn } from '../../lib/utils'
 
 const Card = ({ children, className, ...props }) => (
-  <div className={cn('bg-white rounded-lg shadow-md border border-gray-100', className)} {...props}>
+  <div
+    className={cn(
+      'bg-white/80 backdrop-blur border border-slate-100 rounded-2xl shadow-lg shadow-purple-100/60',
+      className,
+    )}
+    {...props}
+  >
     {children}
   </div>
 )
 
 const CardHeader = ({ children, className, ...props }) => (
-  <div className={cn('px-6 py-4 border-b border-gray-100', className)} {...props}>
+  <div className={cn('px-6 py-4 border-b border-slate-100/80', className)} {...props}>
     {children}
   </div>
 )
@@ -19,7 +25,7 @@ const CardContent = ({ children, className, ...props }) => (
 )
 
 const CardFooter = ({ children, className, ...props }) => (
-  <div className={cn('px-6 py-4 border-t border-gray-100 flex gap-3 justify-end', className)} {...props}>
+  <div className={cn('px-6 py-4 border-t border-slate-100/80 flex gap-3 justify-end', className)} {...props}>
     {children}
   </div>
 )

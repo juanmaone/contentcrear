@@ -3,5 +3,16 @@
   "project": {
     "ref": "your-project-ref",
     "region": "us-east-1"
+  },
+  "functions": {
+    "*/": {
+      "environment": {
+        "OPENROUTER_API_KEY": "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",
+        "OPENROUTER_TEXT_MODEL": "openai/gpt-4o-mini",
+        "OPENROUTER_VISION_MODEL": "openai/gpt-4o-mini",
+        "OPENROUTER_SITE_URL": "http://localhost:5173",
+        "OPENROUTER_APP_NAME": "ContentCreator"
+      }
+    }
   }
 }

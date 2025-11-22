@@ -272,7 +272,7 @@ dist/index.html                   0.46 KB (gzipped: 0.30 KB)
 VITE_SUPABASE_URL          ✅ Public (safe)
 VITE_SUPABASE_ANON_KEY     ✅ Public (limited by RLS)
 REPLICATE_API_TOKEN        🔐 Secret (Supabase only)
-OPENAI_API_KEY             🔐 Secret (Supabase only)
+OPENROUTER_API_KEY         🔐 Secret (Supabase only)
 ```
 
 ---

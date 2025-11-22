@@ -53,35 +53,53 @@ export const useBusinessConfig = () => {
       // Upload logo if provided and is a File
       let logoUrl = configData.logo_url
       if (configData.logo && typeof configData.logo === 'object' && configData.logo instanceof File) {
-        const fileName = `${user.id}/${Date.now()}_logo.jpg`
-        const { error: uploadError } = await supabase.storage
-          .from('business-logos')
-          .upload(fileName, configData.logo, { upsert: true })
+        try {
+          const fileName = `${user.id}/${Date.now()}_${configData.logo.name}`
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('business-logos')
+            .upload(fileName, configData.logo, {
+              upsert: true, // Replace if exists
+            })
 
-        if (uploadError) throw uploadError
+          if (uploadError) throw uploadError
 
-        const { data: publicUrl } = supabase.storage
-          .from('business-logos')
-          .getPublicUrl(fileName)
+          // Get public URL
+          const { data: publicUrl } = supabase.storage
+            .from('business-logos')
+            .getPublicUrl(uploadData.path)
 
-        logoUrl = publicUrl.publicUrl
+          logoUrl = publicUrl.publicUrl
+          console.log('Logo uploaded successfully:', logoUrl)
+        } catch (err) {
+          console.error('Error uploading logo:', err.message)
+          throw new Error(`Failed to upload logo: ${err.message}`)
+        }
       }
 
       // Upload music if provided and is a File
       let musicUrl = configData.music_url
       if (configData.music && typeof configData.music === 'object' && configData.music instanceof File) {
-        const fileName = `${user.id}/${Date.now()}_music.mp3`
-        const { error: uploadError } = await supabase.storage
-          .from('background-music')
-          .upload(fileName, configData.music, { upsert: true })
+        try {
+          const fileName = `${user.id}/${Date.now()}_${configData.music.name}`
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('background-music')
+            .upload(fileName, configData.music, {
+              upsert: true, // Replace if exists
+            })
 
-        if (uploadError) throw uploadError
+          if (uploadError) throw uploadError
 
-        const { data: publicUrl } = supabase.storage
-          .from('background-music')
-          .getPublicUrl(fileName)
+          // Get public URL
+          const { data: publicUrl } = supabase.storage
+            .from('background-music')
+            .getPublicUrl(uploadData.path)
 
-        musicUrl = publicUrl.publicUrl
+          musicUrl = publicUrl.publicUrl
+          console.log('Music uploaded successfully:', musicUrl)
+        } catch (err) {
+          console.error('Error uploading music:', err.message)
+          throw new Error(`Failed to upload music: ${err.message}`)
+        }
       }
 
       const dataToSave = {
@@ -137,7 +155,7 @@ export const useBusinessConfig = () => {
   }
 
   const isConfigured = () => {
-    return !!config && config.business_name && config.category
+    return !!config && config.business_name
   }
 
   return {

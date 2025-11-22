@@ -1,13 +1,13 @@
 # ReelMaker Pro 2025 - Supabase Edge Functions
 
-Este directorio contiene todas las funciones serverless para mantener seguras las claves de API de OpenAI.
+Este directorio contiene todas las funciones serverless para mantener seguras las claves de API de OpenRouter.
 
 ## Funciones Disponibles
 
 ### 1. `analyze-vision`
 **POST** `/functions/v1/analyze-vision`
 
-Analiza imágenes usando GPT-4o Vision para detectar productos, colores, emociones y potencial viral.
+Analiza imágenes usando modelos vision disponibles en OpenRouter (por defecto `openai/gpt-4o-mini`) para detectar productos, colores, emociones y potencial viral.
 
 **Request:**
 ```json
@@ -35,7 +35,7 @@ Analiza imágenes usando GPT-4o Vision para detectar productos, colores, emocion
 ### 2. `generate-ideas`
 **POST** `/functions/v1/generate-ideas`
 
-Genera 6 ideas virales basadas en el análisis de imágenes y categoría de negocio.
+Genera 6 ideas virales basadas en el análisis de imágenes y categoría de negocio utilizando los modelos de texto configurados en OpenRouter.
 
 **Request:**
 ```json
@@ -64,7 +64,7 @@ Genera 6 ideas virales basadas en el análisis de imágenes y categoría de nego
 ### 3. `generate-copy`
 **POST** `/functions/v1/generate-copy`
 
-Genera 5 variaciones de copy viral para el video.
+Genera 5 variaciones de copy viral para el video con el modelo de texto seleccionado vía OpenRouter.
 
 **Request:**
 ```json
@@ -94,7 +94,7 @@ Genera 5 variaciones de copy viral para el video.
 ### 4. `generate-styles`
 **POST** `/functions/v1/generate-styles`
 
-Genera 4 estilos diferentes de video (cinematografía, música, mood).
+Genera 4 estilos diferentes de video (cinematografía, música, mood) usando el mismo modelo de texto configurable en OpenRouter.
 
 **Request:**
 ```json
@@ -138,12 +138,13 @@ supabase functions deploy generate-styles --project-ref YOUR_PROJECT_REF
 
 ## Environment Variables
 
-Cada función requiere `OPENAI_API_KEY` configurada en Supabase:
+Cada función requiere las variables de OpenRouter configuradas en Supabase:
 
 1. Ve a [Supabase Dashboard](https://app.supabase.com)
 2. Selecciona tu proyecto
 3. Ve a Settings → Edge Functions
-4. Agrega `OPENAI_API_KEY` con tu clave de OpenAI
+4. Agrega `OPENROUTER_API_KEY` con tu clave de OpenRouter
+5. Opcional: `OPENROUTER_TEXT_MODEL`, `OPENROUTER_VISION_MODEL`, `OPENROUTER_SITE_URL`, `OPENROUTER_APP_NAME`
 
 ## Testing
 
@@ -160,7 +161,7 @@ curl -X POST http://localhost:54321/functions/v1/analyze-vision \
 ## Notas de Seguridad
 
 - Las claves de API **NUNCA** se exponen al cliente
-- Todas las llamadas a OpenAI se realizan server-side
+- Todas las llamadas a OpenRouter se realizan server-side
 - Las funciones validan los datos de entrada
 - Fallback responses si las llamadas a OpenAI fallan
 - CORS habilitado solo para dominios autorizados

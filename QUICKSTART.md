@@ -22,14 +22,18 @@ npm run dev
 ```
 VITE_SUPABASE_URL=https://[proyecto].supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGc...
-VITE_OPENAI_API_KEY=sk-...
+OPENROUTER_API_KEY=or-...
+OPENROUTER_TEXT_MODEL=openai/gpt-4o-mini
+OPENROUTER_VISION_MODEL=openai/gpt-4o-mini
+OPENROUTER_SITE_URL=http://localhost:5173
+OPENROUTER_APP_NAME=ContentCreator
 VITE_REPLICATE_API_TOKEN=r8_...
 VITE_ELEVENLABS_API_KEY=...
 ```
 
 Get these from:
 - Supabase: Project Settings
-- OpenAI: https://platform.openai.com/api-keys
+- OpenRouter: https://openrouter.ai/keys
 - Replicate: https://replicate.com/account
 - ElevenLabs: https://elevenlabs.io/
 
@@ -55,7 +59,7 @@ src/
 ├── hooks/           # useAuth, useBusinessConfig, useGeneration
 ├── pages/           # Login, Register, Dashboard, Crear, etc.
 ├── components/      # UI components (Button, Card, Input)
-├── lib/             # Supabase & OpenAI wrappers
+├── lib/             # Supabase & OpenRouter wrappers
 └── utils/           # Constants, helpers, templates
 
 supabase/functions/ # 4 Edge Functions (TypeScript/Deno)
@@ -103,9 +107,9 @@ npm run preview
 **Error: Cannot connect to Supabase**
 - Check `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
 
-**Error: OpenAI API failed**
+**Error: OpenRouter API failed**
 - Verify API key is correct
-- Check quota in OpenAI dashboard
+- Check usage/quota in OpenRouter dashboard
 
 **Error: Edge Function not found**
 - Run `supabase functions serve` in another terminal

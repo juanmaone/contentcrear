@@ -6,7 +6,7 @@ const Input = ({ label, error, className, type = 'text', ...props }) => (
     <input
       type={type}
       className={cn(
-        'w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all',
+        'w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white/80 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all',
         error && 'border-red-500 focus:ring-red-500',
         className,
       )}

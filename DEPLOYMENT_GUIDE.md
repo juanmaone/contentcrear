@@ -216,11 +216,11 @@ Then the app will call functions at:
 
 ### ❌ What's NOT Safe in Vercel
 - `REPLICATE_API_TOKEN` - Must be in Supabase secrets ONLY
-- `OPENAI_API_KEY` - Must be in Supabase secrets ONLY
+- `OPENROUTER_API_KEY` - Must be in Supabase secrets ONLY
 
 ### Where These Go
 - **Vercel:** Only the VITE_* variables
-- **Supabase:** All API keys (REPLICATE_API_TOKEN, OPENAI_API_KEY)
+- **Supabase:** All API keys (REPLICATE_API_TOKEN, OPENROUTER_API_KEY)
 - **Edge Functions:** Access secrets with `Deno.env.get('KEY_NAME')`
 
 ---

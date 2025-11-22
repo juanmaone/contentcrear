@@ -68,11 +68,11 @@ export const DEFAULT_COLORS = {
 
 // Free music library (can expand)
 export const FREE_MUSIC_LIBRARY = [
-  { id: 'upbeat_1', name: 'Upbeat Energetic', genre: 'Pop', bpm: 128 },
-  { id: 'chill_1', name: 'Chill Vibes', genre: 'Lofi', bpm: 90 },
-  { id: 'epic_1', name: 'Epic Cinematic', genre: 'Cinematic', bpm: 100 },
-  { id: 'latin_1', name: 'Latin Fiesta', genre: 'Latin', bpm: 120 },
-  { id: 'asmr_1', name: 'ASMR Ambient', genre: 'Ambient', bpm: 60 },
+  { id: 'upbeat_1', name: 'Upbeat Energetic', genre: 'Pop', bpm: 128, url: 'https://assets.mixkit.co/music/preview/mixkit-a-very-happy-christmas-897.mp3' },
+  { id: 'chill_1', name: 'Chill Vibes', genre: 'Lofi', bpm: 90, url: 'https://assets.mixkit.co/music/preview/mixkit-beautiful-dream-493.mp3' },
+  { id: 'epic_1', name: 'Epic Cinematic', genre: 'Cinematic', bpm: 100, url: 'https://assets.mixkit.co/music/preview/mixkit-epic-inspiring-adventure-896.mp3' },
+  { id: 'latin_1', name: 'Latin Fiesta', genre: 'Latin', bpm: 120, url: 'https://assets.mixkit.co/music/preview/mixkit-life-is-a-dream-837.mp3' },
+  { id: 'asmr_1', name: 'ASMR Ambient', genre: 'Ambient', bpm: 60, url: 'https://assets.mixkit.co/music/preview/mixkit-ambient-guitar-queens-729.mp3' },
 ]
 
 // Max file sizes (in bytes)

@@ -184,9 +184,9 @@ Dev Server: Running on :5174 ✅ Active
 ## 🔒 Security Improvements
 
 1. **✅ API Key Protection**
-   - OpenAI key NUNCA en browser
+   - Clave de OpenRouter NUNCA en browser
    - Todas las calls via Edge Functions server-side
-   - VITE_OPENAI_API_KEY solo para Edge Functions
+   - Variables `OPENROUTER_*` solo para funciones (no expuestas en cliente)
 
 2. **✅ CORS Security**
    - Headers configurados en Edge Functions

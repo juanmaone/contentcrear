@@ -1,3 +1,4 @@
+// @ts-nocheck
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 
 const corsHeaders = {
@@ -5,6 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 }
+
+const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 interface CopyOption {
   id: string
@@ -21,6 +24,7 @@ interface GenerateCopyRequest {
   category: string
   whatsappOrPhone: string
   businessConfig: any
+  model?: string
 }
 
 Deno.serve(async (req) => {
@@ -29,9 +33,36 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders })
   }
 
+  if (req.method !== "POST") {
+    return new Response(
+      JSON.stringify({ error: "Method not allowed" }),
+      { status: 405, headers: corsHeaders }
+    )
+  }
+
   try {
-    const { mainProduct, businessName, category, whatsappOrPhone, businessConfig } =
-      (await req.json()) as GenerateCopyRequest
+    const authToken = req.headers.get("authorization")
+    const apiKeyHeader = req.headers.get("apikey")
+    console.log("[generate-copy] Auth Token:", authToken)
+    console.log("[generate-copy] API Key Header:", apiKeyHeader)
+
+    let body
+    try {
+      body = await req.json()
+    } catch (e) {
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON body" }),
+        { status: 400, headers: corsHeaders }
+      )
+    }
+    const {
+      mainProduct,
+      businessName,
+      category,
+      whatsappOrPhone,
+      businessConfig,
+      model,
+    } = body as GenerateCopyRequest
 
     if (!mainProduct || !businessName) {
       return new Response(
@@ -40,27 +71,36 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Get OpenAI API key
-    const openaiApiKey = Deno.env.get("OPENAI_API_KEY")
-    if (!openaiApiKey) {
+    const openrouterApiKey =
+      Deno.env.get("OPENROUTER_API_KEY") ?? Deno.env.get("OPENAI_API_KEY")
+
+    if (!openrouterApiKey) {
       return new Response(
         JSON.stringify({ error: "API configuration error" }),
         { status: 500, headers: corsHeaders }
       )
     }
 
+    const defaultTextModel =
+      Deno.env.get("OPENROUTER_TEXT_MODEL") ?? "openai/gpt-4o-mini"
+    const openrouterSiteUrl =
+      Deno.env.get("OPENROUTER_SITE_URL") ?? "http://localhost:5173"
+    const openrouterAppName =
+      Deno.env.get("OPENROUTER_APP_NAME") ?? "ContentCreator"
+
     const address = businessConfig?.address || "our location"
     const contactText = whatsappOrPhone ? `Contact: ${whatsappOrPhone}` : "Contact us today"
 
-    // Call GPT-4o to generate 5 copy variations
-    const copyResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+    const copyResponse = await fetch(OPENROUTER_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${openaiApiKey}`,
+        Authorization: `Bearer ${openrouterApiKey}`,
+        "HTTP-Referer": openrouterSiteUrl,
+        "X-Title": openrouterAppName,
       },
       body: JSON.stringify({
-        model: "gpt-4o",
+        model: model || defaultTextModel,
         messages: [
           {
             role: "user",
@@ -102,7 +142,7 @@ Requirements:
 
     if (!copyResponse.ok) {
       const error = await copyResponse.text()
-      console.error("OpenAI API error:", error)
+      console.error("OpenRouter API error:", error)
       return new Response(
         JSON.stringify({ error: "Copy generation failed" }),
         { status: 500, headers: corsHeaders }

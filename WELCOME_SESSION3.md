@@ -130,7 +130,7 @@ VITE_SUPABASE_ANON_KEY=...
 Need to set in Supabase Edge Functions:
 ```
 REPLICATE_API_TOKEN=... (add to Supabase secrets)
-OPENAI_API_KEY=... (already set)
+OPENROUTER_API_KEY=... (already set)
 ```
 
 ---

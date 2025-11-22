@@ -5,6 +5,13 @@ import { analyzeImagesWithVision, generateViralIdeas, generateCopyOptions, gener
 import { pollVideoStatus } from '../lib/replicate'
 import { toast } from 'sonner'
 
+const MAX_SCRIPT_CHARACTERS = 2000
+
+const clampScript = (text = '') => {
+  if (!text) return ''
+  return text.length > MAX_SCRIPT_CHARACTERS ? text.slice(0, MAX_SCRIPT_CHARACTERS) : text
+}
+
 export const useGeneration = () => {
   const { user } = useAuth()
 
@@ -19,6 +26,8 @@ export const useGeneration = () => {
   const [selectedStyle, setSelectedStyle] = useState(null)
   const [voiceOptions, setVoiceOptions] = useState([])
   const [selectedVoice, setSelectedVoice] = useState(null)
+  const [scriptVariants, setScriptVariants] = useState([])
+  const [selectedScript, setSelectedScript] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [progress, setProgress] = useState(0)
@@ -34,6 +43,10 @@ export const useGeneration = () => {
     async (files, businessConfig) => {
       if (!files || files.length === 0) {
         throw new Error('No files selected')
+      }
+
+      if (!businessConfig?.business_name || !businessConfig?.category) {
+        throw new Error('Debes completar la configuración del negocio antes de generar contenido')
       }
 
       try {
@@ -55,7 +68,11 @@ export const useGeneration = () => {
         setProgress(30)
 
         // Call Vision analysis
-        const analysis = await analyzeImagesWithVision(imageUrls)
+        const analysis = await analyzeImagesWithVision(
+          imageUrls,
+          businessConfig.category,
+          businessConfig.business_name,
+        )
         setAnalysisResults(analysis)
         setUploadedFiles(files)
 
@@ -123,17 +140,125 @@ export const useGeneration = () => {
   // Step 3: Select copy
   const selectCopyOption = useCallback((copy) => {
     setSelectedCopy(copy)
+    setSelectedStyle(null)
+    setScriptVariants([])
+    setSelectedScript(null)
+    setSelectedVoice(null)
   }, [])
 
   // Step 4: Select style
   const selectStyleOption = useCallback((style) => {
     setSelectedStyle(style)
+    setSelectedVoice(null)
   }, [])
 
   // Step 5: Select voice
   const selectVoiceOption = useCallback((voice) => {
     setSelectedVoice(voice)
   }, [])
+
+  const generateScriptOptions = useCallback(({ idea, copy, style, businessConfig, analysis }) => {
+    if (!idea || !copy || !style) {
+      toast.error('Selecciona idea, copy y estilo antes de generar guiones')
+      return []
+    }
+
+    const businessName = businessConfig?.business_name || 'Tu negocio'
+    const location = businessConfig?.address || 'tu ciudad'
+    const category = businessConfig?.category || 'negocio'
+    const mainProduct = analysis?.[0]?.main_product || 'producto principal'
+    const emotion = analysis?.[0]?.emotion_style || 'moderno'
+    const contactLine =
+      businessConfig?.whatsapp ||
+      businessConfig?.phone ||
+      businessConfig?.instagram ||
+      businessConfig?.facebook ||
+      businessConfig?.email ||
+      businessConfig?.website ||
+      '{{contacto}}'
+
+    const scriptBodies = [
+      {
+        id: 'script_story',
+        title: 'Guión storytelling',
+        text: `[# Hook]
+${copy.text}
+
+[Escena 1 - Presentación]
+${businessName} aparece con tomas ${style.camera_movement || 'dinámicas'} mostrando ${mainProduct}.
+
+[Escena 2 - Desarrollo]
+${idea.description}
+
+[Escena 3 - Prueba]
+${idea.why_viral || 'Muestra resultados y testimonios rápidos.'}
+
+[CTA]
+${copy.text}
+Contacto: ${contactLine}`,
+      },
+      {
+        id: 'script_benefits',
+        title: 'Guión beneficios 1-2-3',
+        text: `[Hook]
+${businessName.toUpperCase()} presenta ${mainProduct}.
+
+[Beneficio 1]
+${analysis?.[0]?.detected_objects?.[0] || 'Detalle visual impactante'} con tono ${emotion}.
+
+[Beneficio 2]
+${analysis?.[0]?.detected_objects?.[1] || 'Experiencia del cliente'}.
+
+[Beneficio 3]
+${analysis?.[0]?.suggested_trends?.[0] || 'Tendencia del momento'} aplicada al ${category}.
+
+[CTA]
+${copy.text}
+Escríbenos al ${contactLine}`,
+      },
+      {
+        id: 'script_conversation',
+        title: 'Guión conversacional',
+        text: `[Hook]
+"¿Sabías que ${businessName} puede ${idea.title.toLowerCase()}?"
+
+[Diálogo]
+Persona A: ${copy.text}
+Persona B: "Suena increíble, ¿dónde los encuentro?"
+Persona A: "Visítanos en ${location} o contáctanos ${contactLine}."
+
+[Cierre]
+${style.description}
+${selectedVoice?.id === 'none' ? 'Solo música y subtítulos animados.' : 'Remata con voz cálida y llamada a la acción.'}`,
+      },
+    ]
+
+    const normalizedScripts = scriptBodies.map((script) => ({
+      ...script,
+      text: clampScript(script.text.trim()),
+    }))
+
+    setScriptVariants(normalizedScripts)
+    setSelectedScript(normalizedScripts[0] || null)
+
+    return normalizedScripts
+  }, [selectedVoice])
+
+  const updateScriptVariant = useCallback((scriptId, newText) => {
+    const safeText = clampScript(newText)
+    setScriptVariants((prev) => prev.map((script) => (script.id === scriptId ? { ...script, text: safeText } : script)))
+    setSelectedScript((prev) => {
+      if (!prev || prev.id !== scriptId) return prev
+      return { ...prev, text: safeText }
+    })
+  }, [])
+
+  const selectScriptVariant = useCallback((scriptId) => {
+    setSelectedScript((prev) => {
+      if (prev?.id === scriptId) return prev
+      return scriptVariants.find((script) => script.id === scriptId) || prev
+    })
+  }, [scriptVariants])
 
   // Save generation to history
   const saveToHistory = useCallback(
@@ -159,6 +284,7 @@ export const useGeneration = () => {
               metadata_json: {
                 voice: selectedVoice,
                 model: generationData.videoModel,
+                script: selectedScript,
               },
             },
           ])
@@ -181,7 +307,7 @@ export const useGeneration = () => {
         throw err
       }
     },
-    [user, analysisResults, selectedIdea, selectedCopy, selectedStyle, selectedVoice],
+    [user, analysisResults, selectedIdea, selectedCopy, selectedStyle, selectedVoice, selectedScript],
   )
 
   // Start polling for job status
@@ -260,6 +386,8 @@ export const useGeneration = () => {
     setSelectedStyle(null)
     setVoiceOptions([])
     setSelectedVoice(null)
+    setScriptVariants([])
+    setSelectedScript(null)
     setError(null)
     setProgress(0)
     setCurrentJobId(null)
@@ -282,6 +410,8 @@ export const useGeneration = () => {
     selectedStyle,
     voiceOptions,
     selectedVoice,
+    scriptVariants,
+    selectedScript,
     loading,
     error,
     progress,
@@ -298,6 +428,9 @@ export const useGeneration = () => {
     selectCopyOption,
     selectStyleOption,
     selectVoiceOption,
+    generateScriptOptions,
+    updateScriptVariant,
+    selectScriptVariant,
     saveToHistory,
     startPolling,
     reset,

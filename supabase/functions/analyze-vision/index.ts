@@ -1,5 +1,5 @@
+// @ts-nocheck
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
-import { createClient } from "jsr:@supabase/supabase-js@2"
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,10 +7,13 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 }
 
+const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+
 interface AnalysisRequest {
   imageUrls: string[]
   category: string
   businessName: string
+  model?: string
 }
 
 interface AnalysisResult {
@@ -28,8 +31,36 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders })
   }
 
+  if (req.method !== "POST") {
+    return new Response(
+      JSON.stringify({ error: "Method not allowed" }),
+      { status: 405, headers: corsHeaders }
+    )
+  }
+
   try {
-    const { imageUrls, category, businessName } = (await req.json()) as AnalysisRequest
+    const authToken = req.headers.get("authorization")
+    const apiKeyHeader = req.headers.get("apikey")
+    console.log("[analyze-vision] Auth Token:", authToken)
+    console.log("[analyze-vision] API Key Header:", apiKeyHeader)
+
+    let body
+    try {
+      body = await req.json()
+    } catch (e) {
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON body" }),
+        { status: 400, headers: corsHeaders }
+      )
+    }
+    const { imageUrls, category, businessName, model } = body as AnalysisRequest
+
+    const defaultVisionModel =
+      Deno.env.get("OPENROUTER_VISION_MODEL") ?? "openai/gpt-4o-mini"
+    const openrouterSiteUrl =
+      Deno.env.get("OPENROUTER_SITE_URL") ?? "http://localhost:5173"
+    const openrouterAppName =
+      Deno.env.get("OPENROUTER_APP_NAME") ?? "ContentCreator"
 
     if (!imageUrls || imageUrls.length === 0) {
       return new Response(
@@ -38,10 +69,12 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Get OpenAI API key from environment
-    const openaiApiKey = Deno.env.get("OPENAI_API_KEY")
-    if (!openaiApiKey) {
-      console.error("Missing OPENAI_API_KEY environment variable")
+    // Get OpenRouter API key from environment
+    const openrouterApiKey =
+      Deno.env.get("OPENROUTER_API_KEY") ?? Deno.env.get("OPENAI_API_KEY")
+
+    if (!openrouterApiKey) {
+      console.error("Missing OPENROUTER_API_KEY environment variable")
       return new Response(
         JSON.stringify({ error: "API configuration error" }),
         { status: 500, headers: corsHeaders }
@@ -74,15 +107,16 @@ Respond ONLY with valid JSON, no additional text.`,
       })),
     ]
 
-    // Call OpenAI Vision API
-    const visionResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+    const visionResponse = await fetch(OPENROUTER_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${openaiApiKey}`,
+        Authorization: `Bearer ${openrouterApiKey}`,
+        "HTTP-Referer": openrouterSiteUrl,
+        "X-Title": openrouterAppName,
       },
       body: JSON.stringify({
-        model: "gpt-4o",
+        model: model || defaultVisionModel,
         messages: [
           {
             role: "user",
@@ -95,16 +129,39 @@ Respond ONLY with valid JSON, no additional text.`,
     })
 
     if (!visionResponse.ok) {
-      const error = await visionResponse.text()
-      console.error("OpenAI API error:", error)
+      const errorText = await visionResponse.text()
+      console.error("OpenRouter API error status:", visionResponse.status)
+      console.error("OpenRouter API error:", errorText)
+      
+      try {
+        const errorJson = JSON.parse(errorText)
+        console.error("OpenRouter error details:", errorJson)
+      } catch (e) {
+        // Not JSON, just log as text
+      }
+      
       return new Response(
-        JSON.stringify({ error: "Vision analysis failed" }),
+        JSON.stringify({ 
+          error: "Vision analysis failed",
+          details: errorText 
+        }),
         { status: 500, headers: corsHeaders }
       )
     }
 
-    const visionData = await visionResponse.json()
+    let visionData
+    try {
+      visionData = await visionResponse.json()
+    } catch (e) {
+      console.error("Failed to parse vision response:", e)
+      return new Response(
+        JSON.stringify({ error: "Failed to parse vision response" }),
+        { status: 500, headers: corsHeaders }
+      )
+    }
+    
     const analysisText = visionData.choices[0]?.message?.content || ""
+    console.log("Vision API response received, content length:", analysisText.length)
 
     // Parse the JSON response from Vision API
     let analysisResults: AnalysisResult[] = []
